@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Functions for building the face recognition network.
 """
 # MIT License
@@ -28,7 +29,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE # 多进程
 import tensorflow as tf
 import numpy as np
 from scipy import misc
@@ -316,7 +317,7 @@ class ImageClass():
   
 def get_dataset(path, has_class_directories=True):
     dataset = []
-    path_exp = os.path.expanduser(path)
+    path_exp = os.path.expanduser(path) # 把path中包含的"~"和"~user"转换成用户目录
     classes = [path for path in os.listdir(path_exp) \
                     if os.path.isdir(os.path.join(path_exp, path))]
     classes.sort()
@@ -325,6 +326,29 @@ def get_dataset(path, has_class_directories=True):
         class_name = classes[i]
         facedir = os.path.join(path_exp, class_name)
         image_paths = get_image_paths(facedir)
+        dataset.append(ImageClass(class_name, image_paths))
+  
+    return dataset
+
+def get_hyp_dataset(path, has_class_directories=True):
+    dataset = []
+    path_exp = os.path.expanduser(path) # 把path中包含的"~"和"~user"转换成用户目录
+    classes = [path for path in os.listdir(path_exp) \
+                    if os.path.isdir(os.path.join(path_exp, path))]
+    classes.sort()
+    nrof_classes = len(classes)
+    for i in range(nrof_classes):
+        #########################只取部分数据集进行测试######################################
+        class_name = classes[i]
+        facedir = os.path.join(path_exp, class_name)
+        
+        image_oringal_paths = get_image_paths(facedir)
+        image_paths = []
+        for n in range(len(image_oringal_paths)):
+            if n % 4 == 0:
+                image_paths.append(image_oringal_paths[n])
+        # image_paths = image_oringal_paths
+        #####################################################################################
         dataset.append(ImageClass(class_name, image_paths))
   
     return dataset
@@ -519,7 +543,7 @@ def store_revision_info(src_path, output_dir, arg_string):
     try:
         # Get git hash
         cmd = ['git', 'rev-parse', 'HEAD']
-        gitproc = Popen(cmd, stdout = PIPE, cwd=src_path)
+        gitproc = Popen(cmd, stdout = PIPE, cwd=src_path) # 创建并返回一个子进程，并在这个进程中执行指定的程序
         (stdout, _) = gitproc.communicate()
         git_hash = stdout.strip()
     except OSError as e:

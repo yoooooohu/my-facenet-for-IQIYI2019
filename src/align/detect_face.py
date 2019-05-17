@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """ Tensorflow implementation of the face detection / alignment algorithm found at
 https://github.com/kpzhang93/MTCNN_face_detection_alignment
 """
@@ -277,6 +278,9 @@ def create_mtcnn(sess, model_path):
     if not model_path:
         model_path,_ = os.path.split(os.path.realpath(__file__))
 
+    # 共享变量机制
+    # tf.get_variable(<name>, <shape>, <initializer>) 创建或返回给定名称的变量
+    # tf.variable_scope(<scope_name>) 管理传给get_variable()的变量名称的作用域
     with tf.variable_scope('pnet'):
         data = tf.placeholder(tf.float32, (None,None,None,3), 'input')
         pnet = PNet({'data':data})
@@ -323,7 +327,7 @@ def detect_face(img, minsize, pnet, rnet, onet, threshold, factor):
         hs=int(np.ceil(h*scale))
         ws=int(np.ceil(w*scale))
         im_data = imresample(img, (hs, ws))
-        im_data = (im_data-127.5)*0.0078125
+        im_data = (im_data-127.5)*0.0078125 # 去均值 + 归一化 -> (-1,1)
         img_x = np.expand_dims(im_data, 0)
         img_y = np.transpose(img_x, (0,2,1,3))
         out = pnet(img_y)

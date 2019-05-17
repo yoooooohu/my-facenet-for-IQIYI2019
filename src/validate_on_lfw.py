@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Validate a face recognizer on the "Labeled Faces in the Wild" dataset (http://vis-www.cs.umass.edu/lfw/).
 Embeddings are calculated using the pairs from http://vis-www.cs.umass.edu/lfw/pairs.txt and the ROC curve
 is calculated and plotted. Both the model metagraph and the model parameters need to exist
@@ -52,7 +53,7 @@ def main(args):
 
             # Get the paths for the corresponding images
             paths, actual_issame = lfw.get_paths(os.path.expanduser(args.lfw_dir), pairs)
-            
+
             image_paths_placeholder = tf.placeholder(tf.string, shape=(None,1), name='image_paths')
             labels_placeholder = tf.placeholder(tf.int32, shape=(None,1), name='labels')
             batch_size_placeholder = tf.placeholder(tf.int32, name='batch_size')
@@ -61,11 +62,15 @@ def main(args):
  
             nrof_preprocess_threads = 4
             image_size = (args.image_size, args.image_size)
+            #创建一个先入先出队列
             eval_input_queue = data_flow_ops.FIFOQueue(capacity=2000000,
                                         dtypes=[tf.string, tf.int32, tf.int32],
                                         shapes=[(1,), (1,), (1,)],
                                         shared_name=None, name=None)
+            # 多值入队
             eval_enqueue_op = eval_input_queue.enqueue_many([image_paths_placeholder, labels_placeholder, control_placeholder], name='eval_enqueue_op')
+            # 将 input_queue 中的 (image, label, control) 元祖 dequeue 出来，根据 control 里的内容
+            #   对 image 进行各种预处理，然后将处理后的 (image, label) 打包成真正输入 model 的 batch
             image_batch, label_batch = facenet.create_input_pipeline(eval_input_queue, image_size, nrof_preprocess_threads, batch_size_placeholder)
      
             # Load the model
@@ -100,6 +105,7 @@ def evaluate(sess, enqueue_op, image_paths_placeholder, labels_placeholder, phas
     if use_flipped_images:
         # Flip every second image
         control_array += (labels_array % 2)*facenet.FLIP
+
     sess.run(enqueue_op, {image_paths_placeholder: image_paths_array, labels_placeholder: labels_array, control_placeholder: control_array})
     
     embedding_size = int(embeddings.get_shape()[1])
