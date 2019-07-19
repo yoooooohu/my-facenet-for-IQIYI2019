@@ -52,6 +52,7 @@ def main(args):
             pairs = lfw.read_pairs(os.path.expanduser(args.lfw_pairs))
 
             # Get the paths for the corresponding images
+            # paths 中存储的是照片对的路径，其对应位置的 actual_issame 存储的是两张照片是否是同一个人
             paths, actual_issame = lfw.get_paths(os.path.expanduser(args.lfw_dir), pairs)
 
             image_paths_placeholder = tf.placeholder(tf.string, shape=(None,1), name='image_paths')
@@ -101,10 +102,11 @@ def evaluate(sess, enqueue_op, image_paths_placeholder, labels_placeholder, phas
     image_paths_array = np.expand_dims(np.repeat(np.array(image_paths),nrof_flips),1)
     control_array = np.zeros_like(labels_array, np.int32)
     if use_fixed_image_standardization:
-        control_array += np.ones_like(labels_array)*facenet.FIXED_STANDARDIZATION
+        control_array += np.ones_like(labels_array)*facenet.FIXED_STANDARDIZATION # FIXED_STANDARDIZATION=8
+    # 是否翻转图片
     if use_flipped_images:
         # Flip every second image
-        control_array += (labels_array % 2)*facenet.FLIP
+        control_array += (labels_array % 2)*facenet.FLIP    # FLIP=16
 
     sess.run(enqueue_op, {image_paths_placeholder: image_paths_array, labels_placeholder: labels_array, control_placeholder: control_array})
     

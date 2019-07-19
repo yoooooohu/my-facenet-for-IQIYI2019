@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Training a face recognizer with TensorFlow based on the FaceNet paper
 FaceNet: A Unified Embedding for Face Recognition and Clustering: http://arxiv.org/abs/1503.03832
 """
@@ -77,7 +78,8 @@ def main(args):
         # Get the paths for the corresponding images
         lfw_paths, actual_issame = lfw.get_paths(os.path.expanduser(args.lfw_dir), pairs)
         
-    
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_device
+        
     with tf.Graph().as_default():
         tf.set_random_seed(args.seed)
         global_step = tf.Variable(0, trainable=False)
@@ -467,8 +469,7 @@ def parse_arguments(argv):
         help='Learning rate decay factor.', default=1.0)
     parser.add_argument('--moving_average_decay', type=float,
         help='Exponential decay for tracking of training parameters.', default=0.9999)
-    parser.add_argument('--seed', type=int,
-        help='Random seed.', default=666)
+    parser.add_argument('--seed', type=int, help='Random seed.', default=666)
     parser.add_argument('--learning_rate_schedule_file', type=str,
         help='File containing the learning rate schedule that is used when learning_rate is set to to -1.', default='data/learning_rate_schedule.txt')
 
@@ -479,6 +480,10 @@ def parse_arguments(argv):
         help='Path to the data directory containing aligned face patches.', default='')
     parser.add_argument('--lfw_nrof_folds', type=int,
         help='Number of folds to use for cross validation. Mainly used for testing.', default=10)
+
+    # user
+    parser.add_argument('--gpu_device', type=str, help='which cpu you want to utilize', default='0,1,2,3')
+
     return parser.parse_args(argv)
   
 

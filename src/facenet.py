@@ -318,8 +318,7 @@ class ImageClass():
 def get_dataset(path, has_class_directories=True):
     dataset = []
     path_exp = os.path.expanduser(path) # 把path中包含的"~"和"~user"转换成用户目录
-    classes = [path for path in os.listdir(path_exp) \
-                    if os.path.isdir(os.path.join(path_exp, path))]
+    classes = [path for path in os.listdir(path_exp) if os.path.isdir(os.path.join(path_exp, path))]
     classes.sort()
     nrof_classes = len(classes)
     for i in range(nrof_classes):
@@ -330,22 +329,49 @@ def get_dataset(path, has_class_directories=True):
   
     return dataset
 
-def get_hyp_dataset(path, has_class_directories=True):
+def get_hyp_dataset(path, has_class_directories = True):
     dataset = []
     path_exp = os.path.expanduser(path) # 把path中包含的"~"和"~user"转换成用户目录
     classes = [path for path in os.listdir(path_exp) \
                     if os.path.isdir(os.path.join(path_exp, path))]
     classes.sort()
     nrof_classes = len(classes)
+
     for i in range(nrof_classes):
         #########################只取部分数据集进行测试######################################
         class_name = classes[i]
         facedir = os.path.join(path_exp, class_name)
         
         image_oringal_paths = get_image_paths(facedir)
+        image_oringal_paths.sort()
+        nrof_oringal_paths = len(image_oringal_paths)
+        
+        # # 分级决定多少图片代表该视频
+        # # methold 1:
+        # if nrof_oringal_paths > 36:
+        #     interval = nrof_oringal_paths / 12
+        # else:
+        #     interval = 3
+
+        # # methold 2:
+        # if nrof_oringal_paths > 45:
+        #     interval = nrof_oringal_paths / 15
+        # else:
+        #     interval = 3
+
+        # methold 3:
+        if nrof_oringal_paths > 180:
+            interval = 6
+        if nrof_oringal_paths > 100:
+            interval = 5
+        if nrof_oringal_paths > 60:
+            interval = 4
+        else:
+            interval = 3
+
         image_paths = []
-        for n in range(len(image_oringal_paths)):
-            if n % 4 == 0:
+        for n in range(nrof_oringal_paths):
+            if n % interval == 0:
                 image_paths.append(image_oringal_paths[n])
         # image_paths = image_oringal_paths
         #####################################################################################
@@ -388,10 +414,17 @@ def split_dataset(dataset, split_ratio, min_nrof_images_per_class, mode):
 def load_model(model, input_map=None):
     # Check if the model is a model directory (containing a metagraph and a checkpoint file)
     #  or if it is a protobuf file with a frozen graph
+
+    # model 文件夹下有以下文件：
+    # e.g.  ./models/facenet/20180402-114759
+    # --20180402-114759.pb
+    # --model-20180402-114759.ckpt-275.data-00000-of-00001      # 保存了当前参数名和值
+    # --model-20180402-114759.ckpt-275.index                    # 保存了辅助索引信息
+    # --model-20180402-114759.meta                              # 保存了当前图结构
     model_exp = os.path.expanduser(model)
     if (os.path.isfile(model_exp)):
         print('Model filename: %s' % model_exp)
-        with gfile.FastGFile(model_exp,'rb') as f:
+        with gfile.FastGFile(model_exp,'rb') as f:  # fastGFile -> File I/O wrappers without thread locking.
             graph_def = tf.GraphDef()
             graph_def.ParseFromString(f.read())
             tf.import_graph_def(graph_def, input_map=input_map, name='')
@@ -401,8 +434,10 @@ def load_model(model, input_map=None):
         
         print('Metagraph file: %s' % meta_file)
         print('Checkpoint file: %s' % ckpt_file)
-      
+        
+        # Recreates a Graph saved in a MetaGraphDef proto.
         saver = tf.train.import_meta_graph(os.path.join(model_exp, meta_file), input_map=input_map)
+        # sess: 保存参数的会话     save_path: 保存参数的路径
         saver.restore(tf.get_default_session(), os.path.join(model_exp, ckpt_file))
     
 def get_model_filenames(model_dir):
@@ -413,7 +448,7 @@ def get_model_filenames(model_dir):
     elif len(meta_files)>1:
         raise ValueError('There should not be more than one meta file in the model directory (%s)' % model_dir)
     meta_file = meta_files[0]
-    ckpt = tf.train.get_checkpoint_state(model_dir)
+    ckpt = tf.train.get_checkpoint_state(model_dir)     # 通过checkpoint文件找到模型文件名
     if ckpt and ckpt.model_checkpoint_path:
         ckpt_file = os.path.basename(ckpt.model_checkpoint_path)
         return meta_file, ckpt_file
@@ -421,7 +456,7 @@ def get_model_filenames(model_dir):
     meta_files = [s for s in files if '.ckpt' in s]
     max_step = -1
     for f in files:
-        step_str = re.match(r'(^model-[\w\- ]+.ckpt-(\d+))', f)
+        step_str = re.match(r'(^model-[\w\- ]+.ckpt-(\d+))', f)     # (正则表达式)匹配成功则返T
         if step_str is not None and len(step_str.groups())>=2:
             step = int(step_str.groups()[1])
             if step > max_step:
@@ -497,6 +532,7 @@ def calculate_val(thresholds, embeddings1, embeddings2, actual_issame, far_targe
     assert(embeddings1.shape[1] == embeddings2.shape[1])
     nrof_pairs = min(len(actual_issame), embeddings1.shape[0])
     nrof_thresholds = len(thresholds)
+    # 交叉验证
     k_fold = KFold(n_splits=nrof_folds, shuffle=False)
     
     val = np.zeros(nrof_folds)
@@ -508,10 +544,11 @@ def calculate_val(thresholds, embeddings1, embeddings2, actual_issame, far_targe
         if subtract_mean:
             mean = np.mean(np.concatenate([embeddings1[train_set], embeddings2[train_set]]), axis=0)
         else:
-          mean = 0.0
+            mean = 0.0
         dist = distance(embeddings1-mean, embeddings2-mean, distance_metric)
       
         # Find the threshold that gives FAR = far_target
+        # 找出最佳阈值
         far_train = np.zeros(nrof_thresholds)
         for threshold_idx, threshold in enumerate(thresholds):
             _, far_train[threshold_idx] = calculate_val_far(threshold, dist[train_set], actual_issame[train_set])

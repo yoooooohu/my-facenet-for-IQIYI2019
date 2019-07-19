@@ -153,6 +153,7 @@ def calculate_mAP(gt_val_path, my_val_path):
     return ap_total / id_num
 
 def calculate_Acc(gt_val_path, my_val_path):
+    gt_dict = get_val_image_labels(gt_val_path)
     # store the including video names per label in gt_val
     id2videos = dict()
     with open(gt_val_path, 'r') as fin:
@@ -176,27 +177,35 @@ def calculate_Acc(gt_val_path, my_val_path):
                     tmp_list.append(video)
             my_id2videos[terms[0]] = tmp_list
 
-    error_labels = []
+    error_videos = []
     right_num = 0.
     sum_num = 0.
     for cid in my_id2videos:
         my_videos = my_id2videos[cid]
         if cid not in id2videos:
-        	for _, my_video in my_videos:
-        		error_labels.append(my_video)
-        		sum_num += 1
+            for _, my_video in my_videos:
+                tmp = my_video.split('.')[0]
+                if tmp in gt_dict.keys():
+                    error_videos.append([my_video, cid, gt_dict[tmp]])
+                else:
+                    error_videos.append([my_video, cid, 0])
+                sum_num += 1
         else:
-	        videos = id2videos[cid]
-	        # recall number upper bound
-	        # assert(len(my_videos) <= 100)
-	        for _, my_video in enumerate(my_videos):
-	            if my_video in videos:
-	            	right_num += 1
-	            else:
-	            	error_labels.append(my_video)
-	            sum_num += 1
-
-    return right_num / sum_num, error_labels
+            videos = id2videos[cid]
+            # recall number upper bound
+            # assert(len(my_videos) <= 100)
+            for _, my_video in enumerate(my_videos):
+                if my_video in videos:
+                    right_num += 1
+                else:
+                    tmp = my_video.split('.')[0]
+                    if tmp in gt_dict.keys():
+                        error_videos.append([my_video, cid, gt_dict[tmp]])
+                    else:
+                        error_videos.append([my_video, cid, 0])
+                sum_num += 1
+    
+    return right_num / sum_num, error_videos
 
 
 

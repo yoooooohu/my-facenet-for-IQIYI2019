@@ -94,4 +94,8 @@ ENV/
 .idea
 
 # USER
-temp_file/
+tmp_file/
+logs/
+backup/
+generate_files/
+offical_files/

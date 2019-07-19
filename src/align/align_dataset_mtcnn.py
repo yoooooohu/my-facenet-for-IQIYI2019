@@ -40,8 +40,8 @@ import time
 
 def main(args):
     start = time.time()
-    
-    tf.device('/gpu:0')
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_device
 
     sleep(random.random())      # 推迟调用线程的运行，可通过参数secs指秒数，表示进程挂起的时间
     output_dir = os.path.expanduser(args.output_dir) # 把path中包含的"~"和"~user"转换成用户目录
@@ -50,9 +50,10 @@ def main(args):
     # Store some git revision info in a text file in the log directory
     src_path,_ = os.path.split(os.path.realpath(__file__))  # realpath(path)  #返回path的真实路径
     facenet.store_revision_info(src_path, output_dir, ' '.join(sys.argv))
-    # dataset = facenet.get_dataset(args.input_dir)
-    dataset = facenet.get_hyp_dataset(args.input_dir)          # customized method
-    
+    if args.user:
+        dataset = facenet.get_hyp_dataset(args.input_dir)          # customized method
+    else:
+        dataset = facenet.get_dataset(args.input_dir)
     print('Creating networks and loading parameters')
     
     with tf.Graph().as_default(): # 实例化一个用于 tensorflow 计算和表示用的数据流图
@@ -177,6 +178,13 @@ def parse_arguments(argv):
                         help='R-Net threshold.', default=0.7)
     parser.add_argument('--threshold_O', type=float,
                         help='O-Net threshold.', default=0.7)
+    parser.add_argument('--gpu_device', type=str,
+                        help='which gpu your code running.', default='0,1,2,3')
+
+    # USER
+    parser.add_argument('--user', 
+        help='train by my way. ifdef only align a part of all set.', action='store_true')
+
     return parser.parse_args(argv)
 
 if __name__ == '__main__':

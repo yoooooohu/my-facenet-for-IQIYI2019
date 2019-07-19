@@ -1,0 +1,20 @@
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000101.png 160 0 542 418
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000015.png
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000039.png 918 68 1046 249
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000117.png 240 246 337 355
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000006.png 544 56 671 220
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000041.png 912 61 1046 253
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000002.png 434 127 504 205
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000008.png 308 239 369 306
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000051.png
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000070.png
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000001.png 424 122 494 203
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000074.png 405 131 517 268
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/0000115.png 336 253 393 318
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000098.png
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000012.png 219 287 401 510
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000004.png 127 301 279 490
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000020.png
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000083.png 240 0 615 414
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000019.png 263 172 482 430
+./datasets/unaligned_IQIYIdataset_op/0528-1439/somepict/000014.png

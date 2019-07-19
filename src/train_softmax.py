@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Training a face recognizer with TensorFlow using softmax cross entropy loss
 """
 # MIT License
@@ -22,6 +23,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# 在py2.x中导入3.x的导入特性的语句
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -45,10 +47,11 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 
 def main(args):
-  
+    # 相当于import model.xxx 而后引用用network.function即可
     network = importlib.import_module(args.model_def)
     image_size = (args.image_size, args.image_size)
 
+    # 生成logs & models的路径文件夹, 根据时间归档
     subdir = datetime.strftime(datetime.now(), '%Y%m%d-%H%M%S')
     log_dir = os.path.join(os.path.expanduser(args.logs_base_dir), subdir)
     if not os.path.isdir(log_dir):  # Create the log directory if it doesn't exist
@@ -59,22 +62,26 @@ def main(args):
 
     stat_file_name = os.path.join(log_dir, 'stat.h5')
 
-    # Write arguments to a text file
+    # 将args参数全部记录于arguments.txt
     facenet.write_arguments_to_file(args, os.path.join(log_dir, 'arguments.txt'))
         
     # Store some git revision info in a text file in the log directory
-    src_path,_ = os.path.split(os.path.realpath(__file__))
+    src_path,_ = os.path.split(os.path.realpath(__file__))  # __file__: 文件当前的位置 realpath: 返回指定文件的标准路径
     facenet.store_revision_info(src_path, log_dir, ' '.join(sys.argv))
 
     np.random.seed(seed=args.seed)
     random.seed(args.seed)
+
+    # 数据集加载
     dataset = facenet.get_dataset(args.data_dir)
     if args.filter_filename:
         dataset = filter_dataset(dataset, os.path.expanduser(args.filter_filename), 
             args.filter_percentile, args.filter_min_nrof_images_per_class)
         
+    # 是否取部分作为验证集
     if args.validation_set_split_ratio>0.0:
-        train_set, val_set = facenet.split_dataset(dataset, args.validation_set_split_ratio, args.min_nrof_val_images_per_class, 'SPLIT_IMAGES')
+        train_set, val_set = facenet.split_dataset(dataset, \
+                        args.validation_set_split_ratio, args.min_nrof_val_images_per_class, 'SPLIT_IMAGES')
     else:
         train_set, val_set = dataset, []
         
@@ -94,6 +101,8 @@ def main(args):
         # Get the paths for the corresponding images
         lfw_paths, actual_issame = lfw.get_paths(os.path.expanduser(args.lfw_dir), pairs)
     
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_device
+
     with tf.Graph().as_default():
         tf.set_random_seed(args.seed)
         global_step = tf.Variable(0, trainable=False)
@@ -140,6 +149,7 @@ def main(args):
         print('Building training graph')
         
         # Build the inference graph
+        # prelogits - 返回的网络结构
         prelogits, _ = network.inference(image_batch, args.keep_probability, 
             phase_train=phase_train_placeholder, bottleneck_layer_size=args.embedding_size, 
             weight_decay=args.weight_decay)
@@ -173,6 +183,7 @@ def main(args):
         accuracy = tf.reduce_mean(correct_prediction)
         
         # Calculate the total losses
+        # tf.get_collection:  The list of values in the collection with the given name.
         regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         total_loss = tf.add_n([cross_entropy_mean] + regularization_losses, name='total_loss')
 
@@ -181,6 +192,7 @@ def main(args):
             learning_rate, args.moving_average_decay, tf.global_variables(), args.log_histograms)
         
         # Create a saver
+        # tf.trainable_variables: 打印tensorflow可训练变量
         saver = tf.train.Saver(tf.trainable_variables(), max_to_keep=3)
 
         # Build the summary operation based on the TF collection of Summaries.
@@ -204,7 +216,8 @@ def main(args):
             # Training and validation loop
             print('Running training')
             nrof_steps = args.max_nrof_epochs*args.epoch_size
-            nrof_val_samples = int(math.ceil(args.max_nrof_epochs / args.validate_every_n_epochs))   # Validate every validate_every_n_epochs as well as in the last epoch
+            # Validate every validate_every_n_epochs as well as in the last epoch
+            nrof_val_samples = int(math.ceil(args.max_nrof_epochs / args.validate_every_n_epochs))
             stat = {
                 'loss': np.zeros((nrof_steps,), np.float32),
                 'center_loss': np.zeros((nrof_steps,), np.float32),
@@ -573,8 +586,12 @@ def parse_arguments(argv):
         help='Concatenates embeddings for the image and its horizontally flipped counterpart.', action='store_true')
     parser.add_argument('--lfw_subtract_mean', 
         help='Subtract feature mean before calculating distance.', action='store_true')
+    
+    # user
+    parser.add_argument('--gpu_device', type=str, help='which cpu you want to utilize', default='0,1,2,3')
+
     return parser.parse_args(argv)
-  
+    
 
 if __name__ == '__main__':
     main(parse_arguments(sys.argv[1:]))
